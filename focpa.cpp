@@ -35,6 +35,7 @@ extern pthread_mutex_t lock;
 
 /* Implements first order CPA in a faster and multithreaded way on big files,
  * using the vertical partitioning approach.
+ * TODO check out socpa.cpp
  */
   template <class TypeTrace, class TypeReturn, class TypeGuess>
 int first_order(Config & conf)
