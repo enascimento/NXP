@@ -86,10 +86,6 @@ int second_order(Config & conf);
 template <class TypeTrace, class TypeReturn, class TypeGuess>
 void * second_order_correlation(void * args_in);
 
-
-template <class TypeTrace, class TypeReturn, class TypeGuess>
-void * higher_moments_correlation(void * args_in);
-
 /* This function precomputes the mean for the traces and subtract this mean
  * from every element of the traces. This is to be used by the newer v_5 of
  * SOCPA.

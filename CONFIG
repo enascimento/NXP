@@ -59,7 +59,7 @@ threads=8
 # 1: first-order (default)
 # 2: second-order, if window=1 corresponds to second order moment
 # n (>2): n-th order standardized moments
-order=1
+order=3
 
 # The return type of the correlation.
 return_type=double

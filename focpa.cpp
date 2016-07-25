@@ -26,7 +26,6 @@
 #include <sstream>
 #include "pearson.h"
 #include "cpa.h"
-#include "utils.h"
 #include "string.h"
 #include "focpa.h"
 #include "socpa.h"
@@ -135,7 +134,7 @@ int first_order(Config & conf)
     double sum_bit_cor[256] = {0};
     double peak_bit_cor[256] = {0};
 
-    /* We keep time each key byte individually;
+    /* We keep time for each key byte individually;
      */
     start = omp_get_wtime();
 

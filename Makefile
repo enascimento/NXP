@@ -1,7 +1,7 @@
 TARGET=daredevil
 PREFIX=/usr/local
 RESOURCES=$(PREFIX)/share/daredevil/
-CC=clang++
+CC=g++
 CFLAGS=-Wall -Wextra -std=c++11 -O3 -DRESOURCES=\"$(RESOURCES)\"
 LIBS=-fopenmp -lm 
 
