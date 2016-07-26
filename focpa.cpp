@@ -28,9 +28,9 @@
 #include "cpa.h"
 #include "string.h"
 #include "focpa.h"
-#include "socpa.h"
+#include "utils.h"
 
-extern pthread_mutex_t lock;
+pthread_mutex_t lock;
 
 /* Implements first order CPA in a faster and multithreaded way on big files,
  * using the vertical partitioning approach.

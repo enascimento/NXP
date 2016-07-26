@@ -18,8 +18,8 @@
 /* You should have received a copy of the GNU General Public License     */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 /* ===================================================================== */
-#ifndef SOCPA_H
-#define SOCPA_H
+#ifndef HOCPA_H
+#define HOCPA_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,16 +29,14 @@
 #include "utils.h"
 #include "pearson.h"
 
-/* Second order and higher order moments cpa for large files
+/* Higher order moments cpa for large files
  */
 template <class TypeTrace, class TypeReturn, class TypeGuess>
-int second_order(Config & conf);
+int higher_order(Config & conf);
 
-/* Correlation function used when computing second order
+/* Correlation function used when computing higher order
  */
 template <class TypeTrace, class TypeReturn, class TypeGuess>
-void * second_order_correlation(void * args_in);
-
-
+void * higher_moments_correlation(void * args_in);
 
 #endif

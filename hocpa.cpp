@@ -18,10 +18,9 @@
 /* You should have received a copy of the GNU General Public License     */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 /* ===================================================================== */
-#include "socpa.h"
 #include "cpa.h"
-#include "utils.h"
 #include "string.h"
+#include "hocpa.h"
 
 extern pthread_mutex_t lock;
 
@@ -34,7 +33,7 @@ extern pthread_mutex_t lock;
  *  multiple times, and we could only do the precomputations once.
  */
   template <class TypeTrace, class TypeReturn, class TypeGuess>
-int second_order(Config & conf)
+int higher_order(Config & conf)
 {
 
   double start, end;
@@ -241,9 +240,10 @@ int second_order(Config & conf)
       }
       col_offset = 0;
 
-      /* We compute the second moment
+      /* We compute the attack_order-th moment
        */
-      res = split_work(fin_conf, second_order_correlation<TypeReturn, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);
+      res = split_work(fin_conf, higher_moments_correlation<TypeReturn, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);
+
       if (res != 0) {
         fprintf(stderr, "[ERROR] Computing correlations.\n");
         return -1;
@@ -313,27 +313,25 @@ int second_order(Config & conf)
   return 0;
 }
 
-/* This function computes the second order correlation between a subset
+/* This function computes the higher order moments correlation between a subset
  * of the traces defined in the structure passed as argument and all the
  * key guesses.
  */
   template <class TypeTrace, class TypeReturn, class TypeGuess>
-void * second_order_correlation(void * args_in)
+void * higher_moments_correlation(void * args_in)
 {
 
   General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in;
   SecondOrderQueues<TypeReturn> * queues = (SecondOrderQueues<TypeReturn> *)(G->fin_conf->queues);
-  int i, j, k,
+  int i, k,
       n_keys = G->fin_conf->conf->total_n_keys,
       n_traces = G->fin_conf->conf->n_traces,
-      n_samples = G->fin_conf->conf->n_samples,
       first_sample = G->fin_conf->conf->index_sample,
       offset = G->global_offset,
-      window = G->fin_conf->conf->window ? G->fin_conf->conf->window : n_samples,
-      up_bound;
+      exponent = G->fin_conf->conf->attack_order;
 
 
-  TypeReturn corr, s_t, ss_t, tmp, std_dev_t;
+  TypeReturn corr, s_t, ss_t, tmp, std_dev_t, mean_t, sigma_n;
   TypeReturn * t = (TypeReturn *) malloc(n_traces * sizeof(TypeReturn));
   if (t == NULL){
     fprintf (stderr, "[ERROR] Allocating memory for t in correlation\n");
@@ -346,12 +344,19 @@ void * second_order_correlation(void * args_in)
 
 
   for (i = G->start; i < G->start + G->length; i++) {
-    up_bound = min(n_samples - offset, i+window);
-    for (j = i; j < up_bound; j++) {
       s_t = 0.0;
       ss_t = 0.0;
+      mean_t = 0.0;
+      sigma_n = 0.0;
       for (k = 0; k < n_traces; k++) {
-        tmp = G->fin_conf->mat_args->trace[i][k] * G->fin_conf->mat_args->trace[j][k];
+        tmp = G->fin_conf->mat_args->trace[i][k];
+        mean_t += tmp;
+        sigma_n += tmp*tmp;
+      }
+      mean_t /= n_traces;
+      sigma_n = pow(sqrt(sigma_n/n_traces - mean_t*mean_t), exponent);
+      for (k = 0; k < n_traces; k++) {
+        tmp = pow((G->fin_conf->mat_args->trace[i][k] - mean_t), exponent)/sigma_n;
         t[k] = tmp;
         s_t += tmp;
         ss_t += tmp*tmp;
@@ -364,7 +369,7 @@ void * second_order_correlation(void * args_in)
 
         q[k].corr  = corr;
         q[k].time1 = i + first_sample + offset;
-        q[k].time2 = j + first_sample + offset;
+        q[k].time2 = i + first_sample + offset;
         q[k].key   = k;
       }
       pthread_mutex_lock(&lock);
@@ -377,19 +382,17 @@ void * second_order_correlation(void * args_in)
       }
       pthread_mutex_unlock(&lock);
 
-    }
+
   }
   free (t);
   free (q);
   return NULL;
 }
 
+template int higher_order<float, double, uint8_t>(Config & conf);
+template int higher_order<double, double, uint8_t>(Config & conf);
+template int higher_order<int8_t, double, uint8_t>(Config & conf);
+template int higher_order<int8_t, float, uint8_t>(Config & conf);
 
-
-template int second_order<float, double, uint8_t>(Config & conf);
-template int second_order<double, double, uint8_t>(Config & conf);
-template int second_order<int8_t, double, uint8_t>(Config & conf);
-template int second_order<int8_t, float, uint8_t>(Config & conf);
-
-template void * second_order_correlation<int8_t, double, uint8_t>(void * args_in);
-template void * second_order_correlation<double, double, uint8_t>(void * args_in);
+template void * higher_moments_correlation<int8_t, double, uint8_t>(void * args_in);
+template void * higher_moments_correlation<double, double, uint8_t>(void * args_in);
