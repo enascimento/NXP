@@ -41,7 +41,7 @@ int first_order(Config & conf)
 
   long int memory = conf.memory;
 
-  double start, end;
+  double start, end = 0;
 
   int res,
       n_keys = conf.total_n_keys,
@@ -149,7 +149,7 @@ int first_order(Config & conf)
     else if (conf.key_size > 1) printf("%i%s", bn, conf.sep.c_str());
 
     /* Potentially attack each bit individually. */
-    int bitsperbyte;
+    int bitsperbyte = 0;
 
     if (conf.algo == ALG_AES) bitsperbyte = 8;
     else if (conf.algo == ALG_DES) bitsperbyte = 4;

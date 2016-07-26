@@ -35,7 +35,7 @@ nsamples=150
 
 # The path to the (possibly multiple) files, their number of lines and columns. The dimensions are needed for the moment in order to know how to read the files and store them in memory. Syntax:
 # trace=path rows columns
-trace=/home/siemen/Desktop/NXP-master/trace 20000 625
+trace=/home/siemen/Desktop/NXP/trace 20000 625
 
 # General structure to create the guesses, it is essentially the same as for the traces. #
 # This are the known plaintexts, the tool will create from these plaintexts the guesses
@@ -46,7 +46,7 @@ files=1
 guess_type=u
 transpose=true
 
-guess=/home/siemen/Desktop/NXP-master/plain 20000 16
+guess=/home/siemen/Desktop/NXP/plain 20000 16
 
 # General configuration options. #
 
