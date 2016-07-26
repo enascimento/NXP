@@ -25,21 +25,23 @@
 
 
 
-/* Computes the correlation between the vectors t_hypot and t_real, given the
+/* Computes the correlation between the vectors x and y, given the
  * precomputed values sum_* and std_dev_*, using the single pass approach. The
  * precomputed values can be calculated by the functions precomp_v_2_*.
+ *
+ * The formula can be viewed in its mathematical form on https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient
  */
   template <class Type1, class Type2, class Type3>
-Type1 pearson_v_2_2(Type3 t_hypot[], Type1 sum_hypot, Type1 std_dev_hypot, Type2 t_real[], Type1 sum_real, Type1 std_dev_real, int length)
+Type1 pearson_v_2_2(Type3 x[], Type1 sum_x, Type1 std_dev_x, Type2 y[], Type1 sum_y, Type1 std_dev_y, int n)
 {
-  Type1 sum_prod = 0.0;
+  Type1 sum_xy = 0.0;
 
-  for(int i = 0; i < length; i++) {
-    sum_prod += (Type1) t_hypot[i] * (Type1) t_real[i];
+  for(int i = 0; i < n; i++) {
+    sum_xy += (Type1) x[i] * (Type1) y[i];
   }
 
-  return length * (( sum_prod - (sum_hypot * sum_real)/length ) /
-   (std_dev_hypot * std_dev_real));
+  return n * (( sum_xy - (sum_x * sum_y)/n ) /
+   (std_dev_x * std_dev_y));
 
 }
 
