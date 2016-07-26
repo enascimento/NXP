@@ -369,17 +369,20 @@ int first_order(Config & conf)
   template <class TypeTrace, class TypeReturn, class TypeGuess>
 void * correlation_first_order(void * args_in)
 {
+
   General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in;
   FirstOrderQueues<TypeReturn> * queues = (FirstOrderQueues<TypeReturn> *)(G->fin_conf->queues);
-  int i, k, j,
+  int i, j, k,
       n_keys = G->fin_conf->conf->total_n_keys,
       n_traces = G->fin_conf->conf->n_traces,
       first_sample = G->fin_conf->conf->index_sample,
       offset = G->global_offset;
+
   TypeReturn corr,
     sum_trace,
     sum_sq_trace,
-    tmp;
+    tmp,
+    std_dev_t;
   CorrFirstOrder<TypeReturn> * q = (CorrFirstOrder<TypeReturn> *) malloc(n_keys * sizeof(CorrFirstOrder<TypeReturn>));
   if (q == NULL){
     fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
@@ -394,13 +397,12 @@ void * correlation_first_order(void * args_in)
       sum_sq_trace += tmp*tmp;
     }
 
-    sum_sq_trace = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
-
+    std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
     for (k = 0; k < n_keys; k++) {
       tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]);
 
       corr = pearson_v_2_2<TypeReturn, TypeTrace, TypeGuess>(G->fin_conf->mat_args->guess[k],\
-        G->precomp_guesses[k][0], tmp, G->fin_conf->mat_args->trace[i], sum_trace, sum_sq_trace, n_traces);
+        G->precomp_guesses[k][0], tmp, G->fin_conf->mat_args->trace[i], sum_trace, std_dev_t, n_traces);
 
       if (!isnormal(corr)) corr = (TypeReturn) 0;
 
@@ -423,7 +425,7 @@ void * correlation_first_order(void * args_in)
   return NULL;
 }
 
-/* This function computes the higher order moments correlation between a subset
+/* This function computes the higher moments correlation between a subset
  * of the traces defined in the structure passed as argument and all the
  * key guesses.
  */
@@ -440,8 +442,13 @@ void * higher_moments_correlation(void * args_in)
       offset = G->global_offset,
       exponent = G->fin_conf->conf->attack_moment;
 
-
-  TypeReturn corr, s_t, ss_t, tmp, std_dev_t, mean_t, sigma_n;
+  TypeReturn corr,
+    sum_trace,
+    sum_sq_trace,
+    tmp,
+    std_dev_t,
+    mean_t,
+    sigma_n;
   TypeReturn * t = (TypeReturn *) malloc(n_traces * sizeof(TypeReturn));
   if (t == NULL){
     fprintf (stderr, "[ERROR] Allocating memory for t in correlation\n");
@@ -454,8 +461,8 @@ void * higher_moments_correlation(void * args_in)
 
 
   for (i = G->start; i < G->start + G->length; i++) {
-      s_t = 0.0;
-      ss_t = 0.0;
+      sum_trace = 0.0;
+      sum_sq_trace = 0.0;
       mean_t = 0.0;
       sigma_n = 0.0;
       for (k = 0; k < n_traces; k++) {
@@ -468,12 +475,15 @@ void * higher_moments_correlation(void * args_in)
       for (k = 0; k < n_traces; k++) {
         tmp = pow((G->fin_conf->mat_args->trace[i][k] - mean_t), exponent)/sigma_n;
         t[k] = tmp;
-        s_t += tmp;
-        ss_t += tmp*tmp;
+        sum_trace += tmp;
+        sum_sq_trace += tmp*tmp;
       }
-      std_dev_t = sqrt(n_traces*ss_t - s_t*s_t);
+      std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
       for (k = 0; k < n_keys; k++) {
-        corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k], G->precomp_guesses[k][0], sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]), t, s_t, std_dev_t, n_traces);
+        tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]);
+
+        corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k],\
+          G->precomp_guesses[k][0], tmp, t, sum_trace, std_dev_t, n_traces);
 
         if (!isnormal(corr)) corr = (TypeReturn) 0;
 

@@ -332,8 +332,11 @@ void * second_order_correlation(void * args_in)
       window = G->fin_conf->conf->window ? G->fin_conf->conf->window : n_samples,
       up_bound;
 
-
-  TypeReturn corr, s_t, ss_t, tmp, std_dev_t;
+  TypeReturn corr,
+    sum_trace,
+    sum_sq_trace,
+    tmp,
+    std_dev_t;
   TypeReturn * t = (TypeReturn *) malloc(n_traces * sizeof(TypeReturn));
   if (t == NULL){
     fprintf (stderr, "[ERROR] Allocating memory for t in correlation\n");
@@ -348,17 +351,20 @@ void * second_order_correlation(void * args_in)
   for (i = G->start; i < G->start + G->length; i++) {
     up_bound = min(n_samples - offset, i+window);
     for (j = i; j < up_bound; j++) {
-      s_t = 0.0;
-      ss_t = 0.0;
+      sum_trace = 0.0;
+      sum_sq_trace = 0.0;
       for (k = 0; k < n_traces; k++) {
         tmp = G->fin_conf->mat_args->trace[i][k] * G->fin_conf->mat_args->trace[j][k];
         t[k] = tmp;
-        s_t += tmp;
-        ss_t += tmp*tmp;
+        sum_trace += tmp;
+        sum_sq_trace += tmp*tmp;
       }
-      std_dev_t = sqrt(n_traces*ss_t - s_t*s_t);
+      std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
       for (k = 0; k < n_keys; k++) {
-        corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k], G->precomp_guesses[k][0], sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]), t, s_t, std_dev_t, n_traces);
+        tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]);
+        
+        corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k],\
+          G->precomp_guesses[k][0], tmp, t, sum_trace, std_dev_t, n_traces);
 
         if (!isnormal(corr)) corr = (TypeReturn) 0;
 

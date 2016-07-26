@@ -30,7 +30,7 @@ template <class TypeTrace, class TypeReturn, class TypeGuess>
 int attack(Config & conf)
 {
     int res = -1;
-    printf("[ATTACK] Computing %i-order correlations...\n", conf.attack_order);
+    printf("[ATTACK] Computing %i-order correlations and %i-order moments...\n", conf.attack_order, conf.attack_moment);
     fflush(stdout);
     if(conf.attack_order == 1)
       res = first_order<TypeTrace, TypeReturn, TypeGuess>(conf);
