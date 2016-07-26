@@ -62,7 +62,7 @@ order=1
 
 # The moment of the attack.
 # n: n-th order standardized moments
-moment=1
+moment=3
 
 # The return type of the correlation.
 return_type=double

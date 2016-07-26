@@ -230,8 +230,10 @@ int first_order(Config & conf)
         row_offset = 0;
 
         col_offset = 0;
-
-        res = split_work(fin_conf, correlation_first_order<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);
+        if(conf.attack_moment == 1)
+          res = split_work(fin_conf, correlation_first_order<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);
+        else
+          res = split_work(fin_conf, higher_moments_correlation<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);
         if (res != 0) {
           fprintf(stderr, "[ERROR] Computing correlations.\n");
           return -1;
@@ -420,6 +422,82 @@ void * correlation_first_order(void * args_in)
   free (q);
   return NULL;
 }
+
+/* This function computes the higher order moments correlation between a subset
+ * of the traces defined in the structure passed as argument and all the
+ * key guesses.
+ */
+  template <class TypeTrace, class TypeReturn, class TypeGuess>
+void * higher_moments_correlation(void * args_in)
+{
+
+  General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in;
+  FirstOrderQueues<TypeReturn> * queues = (FirstOrderQueues<TypeReturn> *)(G->fin_conf->queues);
+  int i, k,
+      n_keys = G->fin_conf->conf->total_n_keys,
+      n_traces = G->fin_conf->conf->n_traces,
+      first_sample = G->fin_conf->conf->index_sample,
+      offset = G->global_offset,
+      exponent = G->fin_conf->conf->attack_moment;
+
+
+  TypeReturn corr, s_t, ss_t, tmp, std_dev_t, mean_t, sigma_n;
+  TypeReturn * t = (TypeReturn *) malloc(n_traces * sizeof(TypeReturn));
+  if (t == NULL){
+    fprintf (stderr, "[ERROR] Allocating memory for t in correlation\n");
+  }
+
+  CorrFirstOrder<TypeReturn> * q = (CorrFirstOrder<TypeReturn> *) malloc(n_keys * sizeof(CorrFirstOrder<TypeReturn>));
+  if (q == NULL){
+    fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
+  }
+
+
+  for (i = G->start; i < G->start + G->length; i++) {
+      s_t = 0.0;
+      ss_t = 0.0;
+      mean_t = 0.0;
+      sigma_n = 0.0;
+      for (k = 0; k < n_traces; k++) {
+        tmp = G->fin_conf->mat_args->trace[i][k];
+        mean_t += tmp;
+        sigma_n += tmp*tmp;
+      }
+      mean_t /= n_traces;
+      sigma_n = pow(sqrt(sigma_n/n_traces - mean_t*mean_t), exponent);
+      for (k = 0; k < n_traces; k++) {
+        tmp = pow((G->fin_conf->mat_args->trace[i][k] - mean_t), exponent)/sigma_n;
+        t[k] = tmp;
+        s_t += tmp;
+        ss_t += tmp*tmp;
+      }
+      std_dev_t = sqrt(n_traces*ss_t - s_t*s_t);
+      for (k = 0; k < n_keys; k++) {
+        corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k], G->precomp_guesses[k][0], sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]), t, s_t, std_dev_t, n_traces);
+
+        if (!isnormal(corr)) corr = (TypeReturn) 0;
+
+        q[k].corr  = corr;
+        q[k].time = i + first_sample + offset;
+        q[k].key   = k;
+      }
+      pthread_mutex_lock(&lock);
+      for (int key=0; key < n_keys; key++) {
+        if (G->fin_conf->conf->key_size == 1)
+          queues->pqueue->insert(q[key]);
+        if (queues->top_corr[key] < q[key]){
+          queues->top_corr[key] = q[key];
+        }
+      }
+      pthread_mutex_unlock(&lock);
+
+
+  }
+  free (t);
+  free (q);
+  return NULL;
+}
+
 
 template int first_order<float, double, uint8_t>(Config & conf);
 template int first_order<double, double, uint8_t>(Config & conf);

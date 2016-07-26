@@ -24,7 +24,6 @@
 #include "cpa.h"
 #include "socpa.h"
 #include "focpa.h"
-#include "hocpa.h"
 
 
 template <class TypeTrace, class TypeReturn, class TypeGuess>
@@ -38,7 +37,8 @@ int attack(Config & conf)
     else if(conf.attack_order == 2)
       res = second_order<TypeTrace, TypeReturn, TypeGuess>(conf);
     else {
-      res = higher_order<TypeTrace, TypeReturn, TypeGuess>(conf);
+      printf("That attack order isn't implemented yet. \n");
+      return res;
     }
     return res;
 }
