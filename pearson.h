@@ -27,7 +27,7 @@
 
 /* Computes the correlation between the vectors x and y, given the
  * precomputed values sum_* and std_dev_*, using the single pass approach. The
- * precomputed values can be calculated by the functions precomp_v_2_*.
+ * precomputed values can be calculated by the function precomp_guesses.
  *
  * The formula can be viewed in its mathematical form on https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient
  */

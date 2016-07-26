@@ -230,7 +230,7 @@ int first_order(Config & conf)
         row_offset = 0;
 
         col_offset = 0;
-        if(conf.attack_moment == 1)
+        if(conf.attack_moment == 0)
           res = split_work(fin_conf, correlation_first_order<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);
         else
           res = split_work(fin_conf, higher_moments_correlation<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);

@@ -60,9 +60,10 @@ threads=8
 # 2: second-order, if window=1 corresponds to second order moment
 order=1
 
-# The moment of the attack.
-# n: n-th order standardized moments
-moment=3
+# The moment of the attack
+# 0: order-th non-standardized correlation
+# n>0: n-th order standardized moments
+moment=1
 
 # The return type of the correlation.
 return_type=double
