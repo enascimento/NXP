@@ -623,6 +623,7 @@ int load_config(Config & config, const char * conf_file)
   config.index_sample = 0;
   config.n_samples = 0;
   config.attack_order = 1;
+  config.attack_moment = 1;
   config.total_n_keys = 256;
   config.correct_key = -1;
   config.type_return = 'd';
@@ -723,6 +724,8 @@ int load_config(Config & config, const char * conf_file)
         config.transpose_guesses = (tmp[0] == 't' ? true : false);
     }else if (line.find("order") != string::npos) {
       config.attack_order = atoi(line.substr(line.find("=") + 1).c_str());
+    }else if (line.find("moment") != string::npos) {
+      config.attack_moment = atoi(line.substr(line.find("=") + 1).c_str());
     }else if (line.find("nkeys") != string::npos) {
       config.total_n_keys = atoi(line.substr(line.find("=") + 1).c_str());
     }else if (line.find("window") != string::npos) {
@@ -920,6 +923,7 @@ void print_config(Config &conf)
   printf("\tTotal number keys:\t %i\n", conf.total_n_keys);
 
   printf("\tAttack order:\t\t %i\n", conf.attack_order);
+  printf("\tAttack moment:\t\t %i\n", conf.attack_moment);
 
   printf("\tReturn Type:\t\t %c\n", conf.type_return);
   printf("\tWindow size:\t\t %i\n", conf.window);

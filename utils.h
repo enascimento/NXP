@@ -357,6 +357,10 @@ struct Config {
    */
   uint8_t attack_order;
 
+  /* The moment of the attack
+   */
+  uint8_t attack_moment;
+
   /* The algorithm to attack.
    * A: AES
    * D: DES
