@@ -386,18 +386,18 @@ void * correlation_first_order(void * args_in)
     fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
   }
 
-  // go over each trace
+  // go over each point in the trace
   for (i = G->start; i < G->start + G->length; i++) {
     sum_trace = 0.0;
     sum_sq_trace = 0.0;
-    // go over each point in the i-th trace and calculate the sum and sum of squares of it
+    // go over each trace, take the i-th point in it and calculate the sum and sum of squares of it
     for (j = 0; j < n_traces; j++){
       tmp = G->fin_conf->mat_args->trace[i][j];
       sum_trace += tmp;
       sum_sq_trace += tmp*tmp;
     }
 
-    // with the sum and sum of squares we can calculate the standard deviation of the trace
+    // with the sum and sum of squares we can calculate the standard deviation of that point in the traces
     std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
 
     // go over all the guesses
@@ -464,12 +464,12 @@ void * correlation_first_order_second_moment(void * args_in)
     fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
   }
 
-  // go over each trace
+  // go over each point in the trace
   for (i = G->start; i < G->start + G->length; i++) {
       sum_trace = 0.0;
       sum_sq_trace = 0.0;
       mean_t = 0.0;
-      //go over all points in the i-th trace and calculate the sum and sum of squares
+      // go over each trace, take the i-th point in it and calculate the sum and sum of squares of it
       for (k = 0; k < n_traces; k++) {
         tmp = G->fin_conf->mat_args->trace[i][k];
         mean_t += tmp;
@@ -477,9 +477,9 @@ void * correlation_first_order_second_moment(void * args_in)
       // transform the sum and sum of squares to the mean and standard deviation
       mean_t /= n_traces;
 
-      // again go over all points in the i-th trace
+      // go over each trace and take the i-th point in it
       for (k = 0; k < n_traces; k++) {
-        // normalize each value using the mean and the standard deviation and raise it to power of exponent to so we can use the exponent-th order standardized moment
+        // normalize each value using the mean and the standard deviation and raise it to power of 2 to so we can use the second order central moment
         tmp = pow(G->fin_conf->mat_args->trace[i][k] - mean_t,2);
         // store the new value in t
         t[k] = tmp;
@@ -488,7 +488,7 @@ void * correlation_first_order_second_moment(void * args_in)
         sum_sq_trace += tmp*tmp;
       }
 
-      //calculate the standard deviation of the new points in the i-th trace using the sum and sum of squares
+      // calculate the standard deviation of the new points using the sum and sum of squares
       std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
 
       // go over all the guesses
@@ -560,13 +560,13 @@ void * correlation_first_order_higher_moments(void * args_in)
     fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
   }
 
-  // go over each trace
+  // go over each point in the trace
   for (i = G->start; i < G->start + G->length; i++) {
       sum_trace = 0.0;
       sum_sq_trace = 0.0;
       mean_t = 0.0;
       sigma_n = 0.0;
-      //go over all points in the i-th trace and calculate the sum and sum of squares
+      // go over each trace, take the i-th point in it and calculate the sum and sum of squares of it
       for (k = 0; k < n_traces; k++) {
         tmp = G->fin_conf->mat_args->trace[i][k];
         mean_t += tmp;
@@ -576,7 +576,7 @@ void * correlation_first_order_higher_moments(void * args_in)
       mean_t /= n_traces;
       sigma_n = sqrt(sigma_n/n_traces - mean_t*mean_t);
 
-      // again go over all points in the i-th trace
+      // go over each trace and take the i-th point in it
       for (k = 0; k < n_traces; k++) {
         // normalize each value using the mean and the standard deviation and raise it to power of exponent to so we can use the exponent-th order standardized moment
         // see Tobias Schneider and Amir Moradi: Leakage Assessment Methodology - a clear roadmap for side-channel evaluations -
@@ -588,7 +588,7 @@ void * correlation_first_order_higher_moments(void * args_in)
         sum_sq_trace += tmp*tmp;
       }
 
-      //calculate the standard deviation of the new points in the i-th trace using the sum and sum of squares
+      // calculate the standard deviation of the new points using the sum and sum of squares
       std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
 
       // go over all the guesses
