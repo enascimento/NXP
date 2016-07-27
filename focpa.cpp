@@ -225,10 +225,12 @@ int first_order(Config & conf)
         row_offset = 0;
 
         col_offset = 0;
-        if(conf.attack_moment == 0)
+        if(conf.attack_moment == 1)
           res = split_work(fin_conf, correlation_first_order<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, correlation_first_order is defined below
+        else if(conf.attack_moment == 2)
+          res = split_work(fin_conf, correlation_first_order_second_moment<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, correlation_first_order_second_moment is defined below
         else
-          res = split_work(fin_conf, higher_moments_correlation<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, higher_moments_correlation is defined below
+          res = split_work(fin_conf, correlation_first_order_higher_moments<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, correlation_first_order_higher_moments is defined below
         if (res != 0) {
           fprintf(stderr, "[ERROR] Computing correlations.\n");
           return -1;
@@ -360,6 +362,7 @@ int first_order(Config & conf)
 /* This function computes the first order correlation between a subset
  * of the traces defined in the structure passed as argument and all the
  * key guesses.
+ * This is used when moment = 1
  */
   template <class TypeTrace, class TypeReturn, class TypeGuess>
 void * correlation_first_order(void * args_in)
@@ -383,10 +386,11 @@ void * correlation_first_order(void * args_in)
     fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
   }
 
+  // go over each trace
   for (i = G->start; i < G->start + G->length; i++) {
     sum_trace = 0.0;
     sum_sq_trace = 0.0;
-    // calculate the sum and sum of squares of the i-th trace
+    // go over each point in the i-th trace and calculate the sum and sum of squares of it
     for (j = 0; j < n_traces; j++){
       tmp = G->fin_conf->mat_args->trace[i][j];
       sum_trace += tmp;
@@ -395,6 +399,8 @@ void * correlation_first_order(void * args_in)
 
     // with the sum and sum of squares we can calculate the standard deviation of the trace
     std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
+
+    // go over all the guesses
     for (k = 0; k < n_keys; k++) {
       // calculate the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
       tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]); //precomp_guesses can be found in memUtils.cpp
@@ -425,12 +431,107 @@ void * correlation_first_order(void * args_in)
   return NULL;
 }
 
+/* This function computes the first order correlation between a subset
+ * of the traces defined in the structure passed as argument and all the
+ * key guesses.
+ * This is used when moment = 2
+ */
+  template <class TypeTrace, class TypeReturn, class TypeGuess>
+void * correlation_first_order_second_moment(void * args_in)
+{
+
+  General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in; //General can be found in memUtils.h
+  FirstOrderQueues<TypeReturn> * queues = (FirstOrderQueues<TypeReturn> *)(G->fin_conf->queues); //FirstOrderQueues can be found in cpa.h
+  int i, k,
+      n_keys = G->fin_conf->conf->total_n_keys,
+      n_traces = G->fin_conf->conf->n_traces,
+      first_sample = G->fin_conf->conf->index_sample,
+      offset = G->global_offset;
+
+  TypeReturn corr,
+    sum_trace,
+    sum_sq_trace,
+    tmp,
+    std_dev_t,
+    mean_t;
+  TypeReturn * t = (TypeReturn *) malloc(n_traces * sizeof(TypeReturn));
+  if (t == NULL){
+    fprintf (stderr, "[ERROR] Allocating memory for t in correlation\n");
+  }
+
+  CorrFirstOrder<TypeReturn> * q = (CorrFirstOrder<TypeReturn> *) malloc(n_keys * sizeof(CorrFirstOrder<TypeReturn>)); //CorrFirstOrder can be found in cpa.h
+  if (q == NULL){
+    fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
+  }
+
+  // go over each trace
+  for (i = G->start; i < G->start + G->length; i++) {
+      sum_trace = 0.0;
+      sum_sq_trace = 0.0;
+      mean_t = 0.0;
+      //go over all points in the i-th trace and calculate the sum and sum of squares
+      for (k = 0; k < n_traces; k++) {
+        tmp = G->fin_conf->mat_args->trace[i][k];
+        mean_t += tmp;
+      }
+      // transform the sum and sum of squares to the mean and standard deviation
+      mean_t /= n_traces;
+
+      // again go over all points in the i-th trace
+      for (k = 0; k < n_traces; k++) {
+        // normalize each value using the mean and the standard deviation and raise it to power of exponent to so we can use the exponent-th order standardized moment
+        tmp = pow(G->fin_conf->mat_args->trace[i][k] - mean_t,2);
+        // store the new value in t
+        t[k] = tmp;
+        // calculate the sum and sum of squares of the new values
+        sum_trace += tmp;
+        sum_sq_trace += tmp*tmp;
+      }
+
+      //calculate the standard deviation of the new points in the i-th trace using the sum and sum of squares
+      std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
+
+      // go over all the guesses
+      for (k = 0; k < n_keys; k++) {
+        // calculate the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
+        tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]); //precomp_guesses can be found in memUtils.cpp
+
+        // calculate the correlation between the guess and the measured trace
+        // arguments: x[], sum_x, std_dev_x, y[], sum_y, std_dev_y, length
+        corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k],\
+          G->precomp_guesses[k][0], tmp, t, sum_trace, std_dev_t, n_traces); //pearson_v_2_2 can be found in pearson.h
+
+        if (!isnormal(corr)) corr = (TypeReturn) 0;
+
+        q[k].corr  = corr;
+        q[k].time = i + first_sample + offset;
+        q[k].key   = k;
+      }
+      pthread_mutex_lock(&lock);
+      for (int key=0; key < n_keys; key++) {
+        if (G->fin_conf->conf->key_size == 1)
+          queues->pqueue->insert(q[key]);
+        if (queues->top_corr[key] < q[key]){
+          queues->top_corr[key] = q[key];
+        }
+      }
+      pthread_mutex_unlock(&lock);
+
+
+  }
+  free (t);
+  free (q);
+  return NULL;
+}
+
+
 /* This function computes the higher moments correlation between a subset
  * of the traces defined in the structure passed as argument and all the
  * key guesses.
+ * This can only be used when moment > 2
  */
   template <class TypeTrace, class TypeReturn, class TypeGuess>
-void * higher_moments_correlation(void * args_in)
+void * correlation_first_order_higher_moments(void * args_in)
 {
 
   General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in; //General can be found in memUtils.h
@@ -459,29 +560,44 @@ void * higher_moments_correlation(void * args_in)
     fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
   }
 
-
+  // go over each trace
   for (i = G->start; i < G->start + G->length; i++) {
       sum_trace = 0.0;
       sum_sq_trace = 0.0;
       mean_t = 0.0;
       sigma_n = 0.0;
+      //go over all points in the i-th trace and calculate the sum and sum of squares
       for (k = 0; k < n_traces; k++) {
         tmp = G->fin_conf->mat_args->trace[i][k];
         mean_t += tmp;
         sigma_n += tmp*tmp;
       }
+      // transform the sum and sum of squares to the mean and standard deviation
       mean_t /= n_traces;
-      sigma_n = pow(sqrt(sigma_n/n_traces - mean_t*mean_t), exponent);
+      sigma_n = sqrt(sigma_n/n_traces - mean_t*mean_t);
+
+      // again go over all points in the i-th trace
       for (k = 0; k < n_traces; k++) {
-        tmp = pow((G->fin_conf->mat_args->trace[i][k] - mean_t), exponent)/sigma_n;
+        // normalize each value using the mean and the standard deviation and raise it to power of exponent to so we can use the exponent-th order standardized moment
+        // see Tobias Schneider and Amir Moradi: Leakage Assessment Methodology - a clear roadmap for side-channel evaluations -
+        tmp = pow((G->fin_conf->mat_args->trace[i][k] - mean_t)/sigma_n, exponent);
+        // store the new value in t
         t[k] = tmp;
+        // calculate the sum and sum of squares of the new values
         sum_trace += tmp;
         sum_sq_trace += tmp*tmp;
       }
-      std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
-      for (k = 0; k < n_keys; k++) {
-        tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]);
 
+      //calculate the standard deviation of the new points in the i-th trace using the sum and sum of squares
+      std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
+
+      // go over all the guesses
+      for (k = 0; k < n_keys; k++) {
+        // calculate the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
+        tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]); //precomp_guesses can be found in memUtils.cpp
+
+        // calculate the correlation between the guess and the measured trace
+        // arguments: x[], sum_x, std_dev_x, y[], sum_y, std_dev_y, length
         corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k],\
           G->precomp_guesses[k][0], tmp, t, sum_trace, std_dev_t, n_traces); //pearson_v_2_2 can be found in pearson.h
 
@@ -518,3 +634,13 @@ template void * correlation_first_order<int8_t, double, uint8_t> (void * args_in
 template void * correlation_first_order<int8_t, float, uint8_t> (void * args_in);
 template void * correlation_first_order<float, double, uint8_t> (void * args_in);
 template void * correlation_first_order<double, double, uint8_t> (void * args_in);
+
+template void * correlation_first_order_second_moment<int8_t, double, uint8_t> (void * args_in);
+template void * correlation_first_order_second_moment<int8_t, float, uint8_t> (void * args_in);
+template void * correlation_first_order_second_moment<float, double, uint8_t> (void * args_in);
+template void * correlation_first_order_second_moment<double, double, uint8_t> (void * args_in);
+
+template void * correlation_first_order_higher_moments<int8_t, double, uint8_t> (void * args_in);
+template void * correlation_first_order_higher_moments<int8_t, float, uint8_t> (void * args_in);
+template void * correlation_first_order_higher_moments<float, double, uint8_t> (void * args_in);
+template void * correlation_first_order_higher_moments<double, double, uint8_t> (void * args_in);

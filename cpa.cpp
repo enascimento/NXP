@@ -37,11 +37,11 @@ int construct_guess (TypeGuess ***guess, uint32_t alg, Matrix *m, uint32_t n_m, 
 
   switch (alg) {
     case ALG_AES:
-      ret = construct_guess_AES (guess, m, n_m, bytenum, R, sbox, n_keys, bit);
+      ret = construct_guess_AES (guess, m, n_m, bytenum, R, sbox, n_keys, bit); //construct_guess_AES can be found in aes.cpp
       if (ret < 0) return -1;
       break;
     case ALG_DES:
-      ret = construct_guess_DES (guess, m, n_m, bytenum, R, des_switch, sbox, n_keys, bit);
+      ret = construct_guess_DES (guess, m, n_m, bytenum, R, des_switch, sbox, n_keys, bit); //construct_guess_DES can be found in des.cpp
       if (ret < 0) return -1;
       break;
     default:

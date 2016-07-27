@@ -57,13 +57,14 @@ threads=8
 
 # The order of the attack.
 # 1: first-order (default)
-# 2: second-order, if window=1 corresponds to second order moment
+# 2: second-order
 order=1
 
-# The moment of the attack
-# 0: order-th non-standardized correlation
-# n>0: n-th order standardized moments
-moment=1
+# The moment of the attack. Note: uneven orders work better
+# 1: first order raw statistical moment (default)
+# 2: second order central moment
+# n>2: n-th order standardized moment
+moment=5
 
 # The return type of the correlation.
 return_type=double

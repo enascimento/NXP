@@ -49,9 +49,14 @@ int first_order(Config & conf);
   template <class TypeTrace, class TypeReturn, class TypeGuess>
 void * correlation_first_order(void * args_in);
 
+/* Correlation function used when computing second order moments
+ */
+template <class TypeTrace, class TypeReturn, class TypeGuess>
+void * correlation_first_order_second_moment(void * args_in);
+
 /* Correlation function used when computing higher moments
  */
 template <class TypeTrace, class TypeReturn, class TypeGuess>
-void * higher_moments_correlation(void * args_in);
+void * correlation_first_order_higher_moments(void * args_in);
 
 #endif

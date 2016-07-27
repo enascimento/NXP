@@ -139,7 +139,9 @@ void * precomp_guesses(void * args_in)
   TypeReturn tmp;
   General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in;
 
+  // go over each row in guess
   for (i = G->start; i < G->start + G->length; i++) {
+    //go over each column in the i-th row in guess and calculate the sum and sum of squares
     for (j = 0; j < G->n_traces; j++) {
       tmp = G->fin_conf->mat_args->guess[i][j];
       G->precomp_guesses[i][0] += tmp;
