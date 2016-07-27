@@ -397,12 +397,12 @@ void * correlation_first_order(void * args_in)
       sum_sq_trace += tmp*tmp;
     }
 
-    // with the sum and sum of squares we can calculate the standard deviation of that point in the traces
+    // with the sum and sum of squares we can calculate n_traces times the standard deviation of that point in the traces
     std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
 
     // go over all the guesses
     for (k = 0; k < n_keys; k++) {
-      // calculate the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
+      // calculate n_traces times the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
       tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]); //precomp_guesses can be found in memUtils.cpp
 
       // calculate the correlation between the guess and the measured trace
@@ -469,17 +469,17 @@ void * correlation_first_order_second_moment(void * args_in)
       sum_trace = 0.0;
       sum_sq_trace = 0.0;
       mean_t = 0.0;
-      // go over each trace, take the i-th point in it and calculate the sum and sum of squares of it
+      // go over each trace, take the i-th point in it and calculate the sum of it
       for (k = 0; k < n_traces; k++) {
         tmp = G->fin_conf->mat_args->trace[i][k];
         mean_t += tmp;
       }
-      // transform the sum and sum of squares to the mean and standard deviation
+      // transform the sum to the mean
       mean_t /= n_traces;
 
       // go over each trace and take the i-th point in it
       for (k = 0; k < n_traces; k++) {
-        // normalize each value using the mean and the standard deviation and raise it to power of 2 to so we can use the second order central moment
+        // centralize each value using the mean and raise it to power of 2 to so we can use the second order central moment
         tmp = pow(G->fin_conf->mat_args->trace[i][k] - mean_t,2);
         // store the new value in t
         t[k] = tmp;
@@ -488,12 +488,12 @@ void * correlation_first_order_second_moment(void * args_in)
         sum_sq_trace += tmp*tmp;
       }
 
-      // calculate the standard deviation of the new points using the sum and sum of squares
+      // calculate n_traces times the standard deviation of the new points using the sum and sum of squares
       std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
 
       // go over all the guesses
       for (k = 0; k < n_keys; k++) {
-        // calculate the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
+        // calculate n_traces times the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
         tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]); //precomp_guesses can be found in memUtils.cpp
 
         // calculate the correlation between the guess and the measured trace
@@ -566,12 +566,14 @@ void * correlation_first_order_higher_moments(void * args_in)
       sum_sq_trace = 0.0;
       mean_t = 0.0;
       sigma_n = 0.0;
+
       // go over each trace, take the i-th point in it and calculate the sum and sum of squares of it
       for (k = 0; k < n_traces; k++) {
         tmp = G->fin_conf->mat_args->trace[i][k];
         mean_t += tmp;
         sigma_n += tmp*tmp;
       }
+
       // transform the sum and sum of squares to the mean and standard deviation
       mean_t /= n_traces;
       sigma_n = sqrt(sigma_n/n_traces - mean_t*mean_t);
@@ -588,12 +590,12 @@ void * correlation_first_order_higher_moments(void * args_in)
         sum_sq_trace += tmp*tmp;
       }
 
-      // calculate the standard deviation of the new points using the sum and sum of squares
+      // calculate n_traces times the standard deviation of the new points using the sum and sum of squares
       std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
 
       // go over all the guesses
       for (k = 0; k < n_keys; k++) {
-        // calculate the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
+        // calculate n_traces times the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
         tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]); //precomp_guesses can be found in memUtils.cpp
 
         // calculate the correlation between the guess and the measured trace

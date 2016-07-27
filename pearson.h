@@ -30,6 +30,7 @@
  * precomputed values can be calculated by the function precomp_guesses.
  *
  * The formula can be viewed in its mathematical form on https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient
+ * Note that std_dev_x and std_dev_y are not the standard deviation but n times the standard deviation
  */
   template <class Type1, class Type2, class Type3>
 Type1 pearson_v_2_2(Type3 x[], Type1 sum_x, Type1 std_dev_x, Type2 y[], Type1 sum_y, Type1 std_dev_y, int n)

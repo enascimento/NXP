@@ -135,8 +135,103 @@ void * precomp_traces_v_2(void * args_in)
   return NULL;
 }
 
+/* This functions simply splits the total work (n_rows) into an equal number of
+ * threads, creates this amount of threads and starts them to precompute the
+ * distance of means for each row of the matrix trace. If the offset value is
+ * specified, we start splitting the work starting at offset.
+ *
+ * ! We expect a matrix where the number of traces is n_rows
+ */
+  template <class TypeTrace, class TypeReturn>
+int p_precomp_traces_norm(TypeTrace ** trace, int n_rows, int n_columns, int n_threads, int offset/*, int n_traces_from_offset*/)
+{
+  int n, rc,
+      workload = 0,
+      n_traces = n_columns;
+
+  //printf("Offset: %i\n", offset);
+
+  /* If the total work by thread is smaller than 1, only the last thread would
+   * work, which is against the sole principle of multithreading. Thus, we
+   * reduce the number of threads until the workload is larger than 1.
+   */
+  workload = ((n_rows-offset)/n_threads);
+  while (workload < 1) {
+    n_threads -= 1;
+    workload = ((n_rows-offset)/n_threads);
+  }
+
+  pthread_t threads[n_threads];
+  PrecompTraces<TypeTrace> *ta = NULL;
+
+  ta = (PrecompTraces<TypeTrace>*) malloc(n_threads * sizeof(PrecompTraces<TypeTrace>));
+  if (ta == NULL) {
+    fprintf (stderr, "[ERROR] Memory alloc failed.\n");
+    return -1;
+  }
+
+  for (n = 0; n < n_threads; n++) {
+    //printf(" Thread_%i [%i-%i]\n",n , offset+ n*workload, offset+n*workload + workload + ((n + 1) / n_threads)*(n_rows % n_threads));
+    ta[n] = PrecompTraces<TypeTrace>(offset + n*workload, workload + ((n + 1) / n_threads) * (n_rows % n_threads), n_traces, trace);
+    rc = pthread_create(&threads[n], NULL, precomp_traces_v_2_norm<TypeTrace, TypeReturn>, (void *) &ta[n]);
+    if (rc != 0) {
+      fprintf(stderr, "[ERROR] Creating thread.\n");
+      free (ta);
+      return -1;
+    }
+  }
+
+  for (n = 0; n < n_threads; n++) {
+    rc = pthread_join(threads[n], NULL);
+    if (rc != 0) {
+      fprintf(stderr, "[ERROR] Joining thread.\n");
+      free (ta);
+      return -1;
+    }
+  }
+  free (ta);
+  return 0;
+}
+
+/* This function precomputes the mean for the traces and subtract this mean
+ * from every element of the traces. This is to be used by the newer v_5 of
+ * SOCPA.
+ */
+  template <class TypeTrace, class TypeReturn>
+void * precomp_traces_v_2_norm(void * args_in)
+{
+
+  int i, j;
+  TypeReturn mean = 0.0;
+  TypeReturn std = 0.0;
+
+  PrecompTraces<TypeTrace> * G = (PrecompTraces<TypeTrace> *) args_in;
+
+  for (i = G->start; i < G->start + G->end; i++) {
+    for (j = 0; j < G->length; j++) {
+      mean += G->trace[i][j];
+      std += pow(G->trace[i][j],2);
+    }
+    std = sqrt(G->length*std - mean*mean)/G->length;
+    mean /= G->length;
+    for (j = 0; j < G->length; j++) {
+      G->trace[i][j] -= mean;
+      G->trace[i][j] /= std;
+    }
+  }
+  return NULL;
+}
+
 template int construct_guess (uint8_t ***guess, uint32_t alg, Matrix *m, uint32_t n_m, uint32_t bytenum, uint32_t R, uint32_t des_switch, uint16_t * sbox, uint32_t n_keys, int8_t bit);
 
 template int p_precomp_traces<int8_t, double>(int8_t ** trace, int n_rows, int n_columns, int n_threads, int offset);
 template int p_precomp_traces<double, double>(double ** trace, int n_rows, int n_columns, int n_threads, int offset);
 template int p_precomp_traces<float, float>(float ** trace, int n_rows, int n_columns, int n_threads, int offset);
+template int p_precomp_traces<float, double>(float ** trace, int n_rows, int n_columns, int n_threads, int offset);
+template int p_precomp_traces<signed char, float>(signed char ** trace, int n_rows, int n_columns, int n_threads, int offset);
+
+template int p_precomp_traces_norm<int8_t, double>(int8_t ** trace, int n_rows, int n_columns, int n_threads, int offset);
+template int p_precomp_traces_norm<double, double>(double ** trace, int n_rows, int n_columns, int n_threads, int offset);
+template int p_precomp_traces_norm<float, float>(float ** trace, int n_rows, int n_columns, int n_threads, int offset);
+template int p_precomp_traces_norm<float, double>(float ** trace, int n_rows, int n_columns, int n_threads, int offset);
+template int p_precomp_traces_norm<signed char, float>(signed char ** trace, int n_rows, int n_columns, int n_threads, int offset);

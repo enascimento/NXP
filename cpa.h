@@ -180,5 +180,10 @@ void * precomp_traces_v_2(void * args_in);
   template <class TypeTrace, class TypeReturn>
 int p_precomp_traces(TypeTrace ** trace, int n_rows, int n_columns, int n_threads, int offset=0);
 
+template <class TypeTrace, class TypeReturn>
+void * precomp_traces_v_2_norm(void * args_in);
+
+template <class TypeTrace, class TypeReturn>
+int p_precomp_traces_norm(TypeTrace ** trace, int n_rows, int n_columns, int n_threads, int offset=0);
 
 #endif

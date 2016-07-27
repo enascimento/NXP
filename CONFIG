@@ -72,7 +72,7 @@ return_type=double
 # The size of the window when computing 2-order CPA
 # Warning, window starts indexing at the position of the first index.
 # e.g. i=23, window=4 => 23, 24, 25, 26
-window=1
+window=4
 
 # The algorithm to attack can be
 # AES

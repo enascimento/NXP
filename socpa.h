@@ -35,10 +35,9 @@ template <class TypeTrace, class TypeReturn, class TypeGuess>
 int second_order(Config & conf);
 
 /* Correlation function used when computing second order
+ * for moment = 1
  */
 template <class TypeTrace, class TypeReturn, class TypeGuess>
 void * second_order_correlation(void * args_in);
-
-
 
 #endif
