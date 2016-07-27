@@ -172,9 +172,6 @@ struct PrecompGuesses {
   template <class TypeTrace, class TypeReturn>
 void * precomp_traces_v_2(void * args_in);
 
-template <class TypeTrace, class TypeReturn, class TypeGuess>
-void * precomp_guesses(void * args_in);
-
 /* This functions simply splits the total work (n_rows) into an equal number of
  * threads, creates this amount of threads and starts them to precompute the
  * distance of means for each row of the matrix trace.
@@ -183,6 +180,5 @@ void * precomp_guesses(void * args_in);
   template <class TypeTrace, class TypeReturn>
 int p_precomp_traces(TypeTrace ** trace, int n_rows, int n_columns, int n_threads, int offset=0);
 
-//The files from socpa.h end here
 
 #endif

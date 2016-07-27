@@ -129,6 +129,26 @@ int split_work(FinalConfig<TypeTrace, TypeReturn, TypeGuess> & fin_conf, void * 
   return 0;
 }
 
+/* This function precomputes the sum and the sum of squares for all guesses
+ * which will later be used in the correlation computation.
+ */
+  template <class TypeTrace, class TypeReturn, class TypeGuess>
+void * precomp_guesses(void * args_in)
+{
+  int i, j;
+  TypeReturn tmp;
+  General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in;
+
+  for (i = G->start; i < G->start + G->length; i++) {
+    for (j = 0; j < G->n_traces; j++) {
+      tmp = G->fin_conf->mat_args->guess[i][j];
+      G->precomp_guesses[i][0] += tmp;
+      G->precomp_guesses[i][1] += tmp*tmp;
+    }
+  }
+  return NULL;
+}
+
 template int get_ncol<int8_t>(long int memsize, int ntraces);
 template int get_ncol<float>(long int memsize, int ntraces);
 template int get_ncol<double>(long int memsize, int ntraces);
@@ -150,3 +170,9 @@ template int split_work<float, double, uint8_t>(FinalConfig<float, double, uint8
 template int split_work<int8_t, double, uint8_t>(FinalConfig<int8_t, double, uint8_t> & fin_conf, void * (*fct)(void *), double ** precomp_k, int total_work, int offset);
 template int split_work<float, float, uint8_t>(FinalConfig<float, float, uint8_t> & fin_conf, void * (*fct)(void *), float ** precomp_k, int total_work, int offset);
 template int split_work<int8_t, float, uint8_t>(FinalConfig<int8_t, float, uint8_t> & fin_conf, void * (*fct)(void *), float ** precomp_k, int total_work, int offset);
+
+template void * precomp_guesses<int8_t, double, uint8_t>(void * args_in);
+template void * precomp_guesses<float, double, uint8_t>(void * args_in);
+template void * precomp_guesses<double, double, uint8_t>(void * args_in);
+template void * precomp_guesses<int8_t, float, uint8_t>(void * args_in);
+template void * precomp_guesses<float, float, uint8_t>(void * args_in);

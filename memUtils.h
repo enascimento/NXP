@@ -238,4 +238,7 @@ int get_ncol(long int memsize, int ntraces);
 template <class TypeTrace, class TypeReturn, class TypeGuess>
 int split_work(FinalConfig<TypeTrace, TypeReturn, TypeGuess> & fin_conf, void * (*fct)(void *), TypeReturn ** precomp_k, int total_work, int offset=0);
 
+template <class TypeTrace, class TypeReturn, class TypeGuess>
+void * precomp_guesses(void * args_in);
+
 #endif

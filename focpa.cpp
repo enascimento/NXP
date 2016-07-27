@@ -386,16 +386,21 @@ void * correlation_first_order(void * args_in)
   for (i = G->start; i < G->start + G->length; i++) {
     sum_trace = 0.0;
     sum_sq_trace = 0.0;
+    // calculate the sum and sum of squares of the i-th trace
     for (j = 0; j < n_traces; j++){
       tmp = G->fin_conf->mat_args->trace[i][j];
       sum_trace += tmp;
       sum_sq_trace += tmp*tmp;
     }
 
+    // with the sum and sum of squares we can calculate the standard deviation of the trace
     std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
     for (k = 0; k < n_keys; k++) {
-      tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]);
+      // calculate the standard deviation of the guesses, this is done by the sum and sum of squares via precomp_guesses
+      tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]); //precomp_guesses can be found in memUtils.cpp
 
+      // calculate the correlation between the guess and the measured trace
+      // arguments: x[], sum_x, std_dev_x, y[], sum_y, std_dev_y, length
       corr = pearson_v_2_2<TypeReturn, TypeTrace, TypeGuess>(G->fin_conf->mat_args->guess[k],\
         G->precomp_guesses[k][0], tmp, G->fin_conf->mat_args->trace[i], sum_trace, std_dev_t, n_traces); //pearson_v_2_2 can be found in pearson.h
 
