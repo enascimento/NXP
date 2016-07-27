@@ -22,7 +22,7 @@
 
 
 /* This file deals with the parsing of the config file and general i/o
- * functions that are used in main.
+ * functions that are used throughout the code.
  */
 
 

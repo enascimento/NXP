@@ -18,17 +18,12 @@
 /* You should have received a copy of the GNU General Public License     */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 /* ===================================================================== */
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <math.h>
-#include <omp.h>
-#include <sstream>
-#include "pearson.h"
+
 #include "cpa.h"
 #include "string.h"
 #include "focpa.h"
 #include "memUtils.h"
+#include "des.h"
 
 pthread_mutex_t lock;
 
@@ -48,7 +43,7 @@ int first_order(Config & conf)
       n_samples = conf.n_samples,
       nmat = conf.n_file_trace,
       nrows = conf.total_n_traces,
-      ncol = min(get_ncol<TypeTrace>(memory-(nrows*n_keys*sizeof(TypeGuess)), nrows), n_samples),
+      ncol = min(get_ncol<TypeTrace>(memory-(nrows*n_keys*sizeof(TypeGuess)), nrows), n_samples), //get_ncol is defined in memUtils.cpp
       col_incr = ncol,
       col_offset = 0,
       row_offset = 0,
@@ -79,19 +74,19 @@ int first_order(Config & conf)
       max_n_rows = conf.traces[i].n_rows;
   }
 
-  res = allocate_matrix(&tmp, max_n_rows, ncol);
+  res = allocate_matrix(&tmp, max_n_rows, ncol); //allocate_matrix can be found in memUtils.cpp
   if (res != 0) {
     fprintf (stderr, "[ERROR] Allocating matrix in focpa vp.\n");
     return -1;
   }
 
-  res = allocate_matrix(&traces, ncol, nrows);
+  res = allocate_matrix(&traces, ncol, nrows); //allocate_matrix can be found in memUtils.cpp
   if (res != 0) {
     fprintf (stderr, "[ERROR] Allocating matrix in focpa vp.\n");
     return -1;
   }
 
-  res = allocate_matrix(&precomp_k, n_keys, 2);
+  res = allocate_matrix(&precomp_k, n_keys, 2); //allocate_matrix can be found in memUtils.cpp
   if (res != 0){
     fprintf(stderr, "[ERROR] Memory allocation failed in focpa vp\n");
     return -1;
@@ -99,10 +94,10 @@ int first_order(Config & conf)
 
   /* We initialize the priority queues to store the highest correlations.
    */
-  PriorityQueue<CorrFirstOrder <TypeReturn> > * pqueue = new PriorityQueue<CorrFirstOrder <TypeReturn> >;
+  PriorityQueue<CorrFirstOrder <TypeReturn> > * pqueue = new PriorityQueue<CorrFirstOrder <TypeReturn> >; //PriorityQueue can be found in memUtils.h
   (*pqueue).init(conf.top);
 
-  CorrFirstOrder <TypeReturn> * top_r_by_key;
+  CorrFirstOrder <TypeReturn> * top_r_by_key; //CorrFirstOrder can be found in cpa.h
 
   /* If we initialize with malloc, the default constructor is not called,
    * leading to possible issued when inserting/comparing elements.
@@ -114,15 +109,15 @@ int first_order(Config & conf)
   }
 
 
-  MatArgs<TypeTrace, TypeReturn, TypeGuess> mat_args = MatArgs<TypeTrace, TypeReturn, TypeGuess> (traces, guesses, NULL);
+  MatArgs<TypeTrace, TypeReturn, TypeGuess> mat_args = MatArgs<TypeTrace, TypeReturn, TypeGuess> (traces, guesses, NULL); //MatArgs can be found in memUtils.h
 
-  FirstOrderQueues<TypeReturn>* queues = new FirstOrderQueues<TypeReturn>(pqueue, top_r_by_key);
+  FirstOrderQueues<TypeReturn>* queues = new FirstOrderQueues<TypeReturn>(pqueue, top_r_by_key); //FirstOrderQueues can be found in cpa.h
   if(queues == NULL){
     fprintf(stderr, "[ERROR] Allocating memory for the priority queues.\n");
     return -1;
   }
 
-  FinalConfig<TypeTrace, TypeReturn, TypeGuess> fin_conf = FinalConfig<TypeTrace, TypeReturn, TypeGuess>(&mat_args, &conf, (void*)queues);
+  FinalConfig<TypeTrace, TypeReturn, TypeGuess> fin_conf = FinalConfig<TypeTrace, TypeReturn, TypeGuess>(&mat_args, &conf, (void*)queues); //FinalConfig can be found in memUtils.h
   pthread_mutex_init(&lock, NULL);
 
   /* We loop over all the key bytes.
@@ -163,13 +158,13 @@ int first_order(Config & conf)
         else if (conf.key_size > 1) printf("%i%s", bit, conf.sep.c_str());
       }
 
-      res = construct_guess (&fin_conf.mat_args->guess, conf.algo, conf.guesses, conf.n_file_guess, bn, conf.round, conf.des_switch, conf.sbox, conf.total_n_keys, bit);
+      res = construct_guess (&fin_conf.mat_args->guess, conf.algo, conf.guesses, conf.n_file_guess, bn, conf.round, conf.des_switch, conf.sbox, conf.total_n_keys, bit); // construct_guess can be found in cpa.cpp
       if (res < 0) {
         fprintf (stderr, "[ERROR] Constructing guess.\n");
         return -1;
       }
 
-      res = split_work(fin_conf, precomp_guesses<TypeTrace, TypeReturn, TypeGuess>, precomp_k, n_keys);
+      res = split_work(fin_conf, precomp_guesses<TypeTrace, TypeReturn, TypeGuess>, precomp_k, n_keys); //split_work can be found in memUtils.cpp
       if (res != 0) {
         fprintf(stderr, "[ERROR] Precomputing sum and sum of square for the guesses.\n");
         return -1;
@@ -199,7 +194,7 @@ int first_order(Config & conf)
           cur_n_rows = conf.traces[i].n_rows;
           cur_n_cols = conf.traces[i].n_columns;
 
-          res = load_file_v_1(conf.traces[i].filename, &tmp, cur_n_rows, to_load, conf.index_sample + sample_offset + row_offset, cur_n_cols);
+          res = load_file_v_1(conf.traces[i].filename, &tmp, cur_n_rows, to_load, conf.index_sample + sample_offset + row_offset, cur_n_cols); //load_file_v_1 can be found in utils.cpp
           if (res != 0) {
             fprintf (stderr, "[ERROR] Loading file.\n");
             return -1;
@@ -231,9 +226,9 @@ int first_order(Config & conf)
 
         col_offset = 0;
         if(conf.attack_moment == 0)
-          res = split_work(fin_conf, correlation_first_order<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);
+          res = split_work(fin_conf, correlation_first_order<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, correlation_first_order is defined below
         else
-          res = split_work(fin_conf, higher_moments_correlation<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset);
+          res = split_work(fin_conf, higher_moments_correlation<TypeTrace, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, higher_moments_correlation is defined below
         if (res != 0) {
           fprintf(stderr, "[ERROR] Computing correlations.\n");
           return -1;
@@ -252,12 +247,12 @@ int first_order(Config & conf)
        */
       int correct_key;
       if (conf.key_size == 1) {
-        if (conf.des_switch == DES_4_BITS && conf.correct_key != -1) correct_key = get_4_middle_bits(conf.correct_key);
+        if (conf.des_switch == DES_4_BITS && conf.correct_key != -1) correct_key = get_4_middle_bits(conf.correct_key); //get_4_middle_bits can be found in des.cpp
         else correct_key = conf.correct_key;
         pqueue->print(conf.top, correct_key);
-        print_top_r(top_r_by_key, n_keys, correct_key);
+        print_top_r(top_r_by_key, n_keys, correct_key); //print_top_r can be found in utils.cpp
       } else {
-        if (conf.des_switch == DES_4_BITS) correct_key = get_4_middle_bits(conf.complete_correct_key[bn]);
+        if (conf.des_switch == DES_4_BITS) correct_key = get_4_middle_bits(conf.complete_correct_key[bn]); //get_4_middle_bits can be found in des.cpp
         else correct_key = conf.complete_correct_key[bn];
 
         if (conf.bitnum == -1) {
@@ -272,7 +267,7 @@ int first_order(Config & conf)
             }
           }
         } else {
-          print_top_r(top_r_by_key, n_keys, correct_key, conf.sep);
+          print_top_r(top_r_by_key, n_keys, correct_key, conf.sep); //print_top_r can be found in utils.cpp
         }
       }
 
@@ -353,7 +348,7 @@ int first_order(Config & conf)
   delete[] top_r_by_key;
   delete pqueue;
   delete queues;
-  free_matrix(&precomp_k, n_keys);
+  free_matrix(&precomp_k, n_keys); //free_matrix can be found in utils.cpp
   free_matrix(&traces, ncol);
   free_matrix(&tmp, max_n_rows);
   free_matrix(&fin_conf.mat_args->guess, n_keys);
@@ -370,8 +365,8 @@ int first_order(Config & conf)
 void * correlation_first_order(void * args_in)
 {
 
-  General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in;
-  FirstOrderQueues<TypeReturn> * queues = (FirstOrderQueues<TypeReturn> *)(G->fin_conf->queues);
+  General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in; //General can be found in memUtils.h
+  FirstOrderQueues<TypeReturn> * queues = (FirstOrderQueues<TypeReturn> *)(G->fin_conf->queues); //FirstOrderQueues can be found in cpa.h
   int i, j, k,
       n_keys = G->fin_conf->conf->total_n_keys,
       n_traces = G->fin_conf->conf->n_traces,
@@ -383,7 +378,7 @@ void * correlation_first_order(void * args_in)
     sum_sq_trace,
     tmp,
     std_dev_t;
-  CorrFirstOrder<TypeReturn> * q = (CorrFirstOrder<TypeReturn> *) malloc(n_keys * sizeof(CorrFirstOrder<TypeReturn>));
+  CorrFirstOrder<TypeReturn> * q = (CorrFirstOrder<TypeReturn> *) malloc(n_keys * sizeof(CorrFirstOrder<TypeReturn>)); //CorrFirstOrder can be found in cpa.h
   if (q == NULL){
     fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
   }
@@ -402,7 +397,7 @@ void * correlation_first_order(void * args_in)
       tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]);
 
       corr = pearson_v_2_2<TypeReturn, TypeTrace, TypeGuess>(G->fin_conf->mat_args->guess[k],\
-        G->precomp_guesses[k][0], tmp, G->fin_conf->mat_args->trace[i], sum_trace, std_dev_t, n_traces);
+        G->precomp_guesses[k][0], tmp, G->fin_conf->mat_args->trace[i], sum_trace, std_dev_t, n_traces); //pearson_v_2_2 can be found in pearson.h
 
       if (!isnormal(corr)) corr = (TypeReturn) 0;
 
@@ -433,8 +428,8 @@ void * correlation_first_order(void * args_in)
 void * higher_moments_correlation(void * args_in)
 {
 
-  General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in;
-  FirstOrderQueues<TypeReturn> * queues = (FirstOrderQueues<TypeReturn> *)(G->fin_conf->queues);
+  General<TypeTrace, TypeReturn, TypeGuess> * G = (General<TypeTrace, TypeReturn, TypeGuess> *) args_in; //General can be found in memUtils.h
+  FirstOrderQueues<TypeReturn> * queues = (FirstOrderQueues<TypeReturn> *)(G->fin_conf->queues); //FirstOrderQueues can be found in cpa.h
   int i, k,
       n_keys = G->fin_conf->conf->total_n_keys,
       n_traces = G->fin_conf->conf->n_traces,
@@ -454,7 +449,7 @@ void * higher_moments_correlation(void * args_in)
     fprintf (stderr, "[ERROR] Allocating memory for t in correlation\n");
   }
 
-  CorrFirstOrder<TypeReturn> * q = (CorrFirstOrder<TypeReturn> *) malloc(n_keys * sizeof(CorrFirstOrder<TypeReturn>));
+  CorrFirstOrder<TypeReturn> * q = (CorrFirstOrder<TypeReturn> *) malloc(n_keys * sizeof(CorrFirstOrder<TypeReturn>)); //CorrFirstOrder can be found in cpa.h
   if (q == NULL){
     fprintf (stderr, "[ERROR] Allocating memory for q in correlation\n");
   }
@@ -483,7 +478,7 @@ void * higher_moments_correlation(void * args_in)
         tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]);
 
         corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k],\
-          G->precomp_guesses[k][0], tmp, t, sum_trace, std_dev_t, n_traces);
+          G->precomp_guesses[k][0], tmp, t, sum_trace, std_dev_t, n_traces); //pearson_v_2_2 can be found in pearson.h
 
         if (!isnormal(corr)) corr = (TypeReturn) 0;
 

@@ -21,6 +21,15 @@
 #ifndef FOCPA_H
 #define FOCPA_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <math.h>
+#include <omp.h>
+#include <sstream>
+#include "utils.h"
+#include "pearson.h"
+
 /* First order cpa for large files
  */
 template <class TypeTrace, class TypeReturn, class TypeGuess>

@@ -39,7 +39,6 @@
 #define QUEUE_INIT 1024
 #define QUEUE_PRINT 100
 
-
 #define KRED  "\x1B[31m"
 #define KGRN  "\x1B[32m"
 #define RESET "\033[0m"

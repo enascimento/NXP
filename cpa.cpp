@@ -21,6 +21,7 @@
 
 /* This file is used in every correlation power attack. It has functions
  * like split_work or precomp_traces that are used in focpa and socpa.
+ * Also all the used structures in focpa and socpa can be found in cpa.h.
  */
 
 #include "cpa.h"
