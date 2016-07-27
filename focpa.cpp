@@ -28,7 +28,7 @@
 #include "cpa.h"
 #include "string.h"
 #include "focpa.h"
-#include "utils.h"
+#include "memUtils.h"
 
 pthread_mutex_t lock;
 

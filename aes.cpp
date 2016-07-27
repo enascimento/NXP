@@ -18,7 +18,7 @@
 /* You should have received a copy of the GNU General Public License     */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 /* ===================================================================== */
-#include "utils.h"
+#include "memUtils.h"
 #include "aes.h"
 
 /* Compute the number of bits set (Hamming weight or poulation count) in a
@@ -81,4 +81,3 @@ int construct_guess_AES (TypeGuess ***guess, Matrix *m, uint32_t n_m, uint32_t b
 
 template int construct_guess_AES (uint8_t ***guess, Matrix *m, uint32_t n_m, uint32_t bytenum, uint32_t R, uint16_t * sbox, uint32_t n_keys, int8_t bit);
 template int construct_guess_AES ( int8_t ***guess, Matrix *m, uint32_t n_m, uint32_t bytenum, uint32_t R, uint16_t * sbox, uint32_t n_keys, int8_t bit);
-

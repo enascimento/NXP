@@ -21,16 +21,15 @@
 #include <omp.h>
 #include <stdlib.h>
 #include "utils.h"
-#include "cpa.h"
-#include "socpa.h"
 #include "focpa.h"
+#include "socpa.h"
 
 
 template <class TypeTrace, class TypeReturn, class TypeGuess>
 int attack(Config & conf)
 {
     int res = -1;
-    printf("[ATTACK] Computing %i-order correlations and %i-order moments...\n", conf.attack_order, conf.attack_moment);
+    printf("[ATTACK] Computing %i-order correlations for %i-order moments and window size %i...\n", conf.attack_order, conf.attack_moment, conf.window);
     fflush(stdout);
     if(conf.attack_order == 1)
       res = first_order<TypeTrace, TypeReturn, TypeGuess>(conf);

@@ -20,7 +20,7 @@
 /* ===================================================================== */
 #include "socpa.h"
 #include "cpa.h"
-#include "utils.h"
+#include "memUtils.h"
 #include "string.h"
 
 extern pthread_mutex_t lock;
@@ -362,7 +362,7 @@ void * second_order_correlation(void * args_in)
       std_dev_t = sqrt(n_traces*sum_sq_trace - sum_trace*sum_trace);
       for (k = 0; k < n_keys; k++) {
         tmp = sqrt(n_traces * G->precomp_guesses[k][1] - G->precomp_guesses[k][0] * G->precomp_guesses[k][0]);
-        
+
         corr = pearson_v_2_2<TypeReturn, TypeReturn, TypeGuess>(G->fin_conf->mat_args->guess[k],\
           G->precomp_guesses[k][0], tmp, t, sum_trace, std_dev_t, n_traces);
 

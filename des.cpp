@@ -19,9 +19,10 @@
 /* You should have received a copy of the GNU General Public License     */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 /* ===================================================================== */
-#include "utils.h"
-#include "des.h"
+
+#include "memUtils.h"
 #include "aes.h"
+#include "des.h"
 
 /* The following was largely inspired from
  * - Andrey Panin's implementation for Dovecot under the
@@ -31,7 +32,6 @@
  * - The SMB implementation by Christopher R. Hertel:
  *   http://www.ubiqx.org/proj/libcifs/source/Auth/DES.c
  */
-
 
 /* DES initial permutation
  */

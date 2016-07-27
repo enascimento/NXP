@@ -18,6 +18,7 @@
 /* You should have received a copy of the GNU General Public License     */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 /* ===================================================================== */
+
 #ifndef UTILS_H
 #define UTILS_H
 
@@ -54,224 +55,6 @@
 */
 
 using namespace std;
-
-
-/* Structure used to stores all the arrays.
- */
-template <typename TypeTrace, typename TypeReturn, typename TypeGuess>
-struct MatArgs {
-
-  TypeTrace ** trace;
-  TypeGuess ** guess;
-  TypeReturn ** results;
-
-  MatArgs(TypeTrace ** tr, TypeGuess ** gues, TypeReturn ** res):
-    trace(tr), guess(gues), results(res) {
-    }
-};
-
-/* Structures used to stores all the *common* information needed by the
- * threads to compute the correlation, like the pointers to the traces
- * and guesses arrays and their sizes.
- */
-template <typename TypeTrace, typename TypeReturn, typename TypeGuess>
-struct Args {
-
-  TypeTrace ** trace;
-  int n_samples;
-  TypeGuess ** guess;
-  int n_keys;
-  TypeReturn ** results;
-  int n_traces;
-  int nsqr;
-
-  Args(TypeTrace ** tr, int n_s, TypeGuess ** gues, int nk, TypeReturn ** res, int nt, int ns):
-    trace(tr), n_samples(n_s), guess(gues), n_keys(nk), results(res), n_traces(nt), nsqr(ns) {
-    }
-};
-
-/* Structure used by threads to access the common information, and the
- * indices in the array of traces where every individual thread will start
- * and stop computing correlations.
- */
-template <typename TypeTrace, typename TypeReturn, typename TypeGuess>
-struct ThreadArgs {
-
-    Args<TypeTrace, TypeReturn, TypeGuess> * args;
-    int start;
-    int length;
-
-    ThreadArgs(Args<TypeTrace, TypeReturn, TypeGuess> * a, int st, int len):
-      args(a), start(st), length(len) {
-    }
-};
-
-/* Stucture to store a first order correlation element to be put in the
- * priority queue. Such an element is defined by its correlation, and
- * the two time sample and key that led to this correlation.
- */
-template <typename Type>
-struct CorrSecondOrder {
-
-  Type corr;
-  int time1;
-  int time2;
-  int key;
-
-  CorrSecondOrder(Type c, int t1, int t2, int k) : corr(c), time1(t1), time2(t2), key(k) {
-  }
-
-  CorrSecondOrder() : corr(0), time1(0), time2(0), key(0) {
-  }
-
-  bool operator<(const struct CorrSecondOrder<Type> & other) const {
-    return fabs(this->corr) < fabs(other.corr);
-  }
-
-  /* Not really correct in a logical PoV, but this is to get the rank
-   * of the highest correct key in the PriorityQueue.
-   */
-  bool operator==(const int other_key) const {
-    return this->key == other_key;
-  }
-
-  friend std::ostream& operator<<( std::ostream& out, const CorrSecondOrder& b ){
-    return out << setw(16) << b.corr << setw(6) << "0x" << setw(4) << left << hex << b.key << right << setw(8) << dec << b.time1 <<setw(8) << dec << b.time2;
-  }
-
-  void corr2str(string sep){
-    cout << time1 << sep << time2 << sep << "0x" << hex << key << dec << sep << corr << endl;
-  }
-
-};
-
-/* Stucture to store a first order correlation element to be put in the
- * priority queue. Such an element is defined by its correlation, and
- * the time sample and key that led to this correlation.
- */
-template <typename Type>
-struct CorrFirstOrder {
-
-  Type corr;
-  int time;
-  int key;
-
-  CorrFirstOrder() : corr(0), time(0), key(0) {
-  }
-
-  CorrFirstOrder(Type c, int t, int k) : corr(c), time(t), key(k) {
-  }
-
-  bool operator<(const struct CorrFirstOrder & other) const {
-    return fabs(this->corr) < fabs(other.corr);
-  }
-
-  bool operator==(const int other_key) const {
-    return this->key == other_key;
-  }
-
-  friend std::ostream& operator<<( std::ostream& out, const CorrFirstOrder& b ){
-    return out << setw(16) << b.corr << setw(6) << "0x" << setfill('0') << setw(2) << hex << b.key << setw(6) << setfill(' ') << right << setw(8) << dec << b.time;
-  }
-
-  void corr2str(string sep){
-    cout << time << sep << "0x" << hex << key << dec << sep << corr << endl;
-  }
-
-};
-
-/* Homemade Priority Queue used to store the best correlations
- */
-template <typename Type>
-class PriorityQueue
-{
-  Type * array;
-  int size, max_size, index_min, total;
-
-  public:
-  PriorityQueue(int s)
-  {
-    init(s);
-  }
-  PriorityQueue(){}
-
-  void init(int s)
-  {
-    max_size = s;
-    array = (Type *) malloc(max_size * sizeof(Type));
-    size = 0;
-    index_min = 0;
-    total = 0;
-  }
-  void insert(const Type& elem)
-  {
-    if (size == max_size) {
-      if(array[index_min] < elem) {
-        array[index_min] = elem;
-        update_smallest_ind();
-      }
-    }else {
-      array[size] = elem;
-      if (elem < array[index_min]) {
-        index_min = size;
-      }
-      size += 1;
-    }
-    total++;
-  }
-
-  void print(int length = -1, int key = -1)
-  {
-    int i;
-    uint8_t seen_key = 0;
-
-    if (length == -1 || length > size)
-      length = size;
-
-    cout << "[INFO]\t" << total <<" correlations computed in total." << endl;
-    cout << "[INFO]\tGlobal top " << length << " correlations." << endl;
-    sort(array, array + size);
-    update_smallest_ind();
-    cout << endl;
-    for (i = size - 1; i >= (size-length); i--) {
-      if (array[i] == key){
-        seen_key = 1;
-        cout << KGRN << array[i] << RESET << endl;
-      }else
-        cout << array[i] << endl;
-    }
-
-    if(length != size && !seen_key){
-      while (i > 0){
-        if (array[i] == key){
-          seen_key = 1;
-          for(int j = 0; j < 3; j++)
-            cout << setw(13) << '.' << setw(10) << '.' <<  setw(10) << '.' <<setw(8) << '.' << endl;
-          cout << KGRN << array[i] << RESET << "\tat rank " << size-i << "." << endl;
-          break;
-        }
-        i--;
-      }
-    }
-    if (!seen_key && key != -1 && size != 0){
-      cout << endl;
-      cout << "Key 0x" << hex << key << " does not appear in the top " << dec << size << " correlations." << endl;
-    }
-    cout << endl;
-  }
-  private:
-  void update_smallest_ind()
-  {
-    int i;
-    for (i = 0; i < size; i++) {
-      if (array[i] < array[index_min]) {
-        index_min = i;
-      }
-    }
-  }
-
-};
-
 
 /* Used to store the filename and dimensions of the matrix for loading them
  * in files later on.
@@ -442,41 +225,6 @@ struct Config {
 
 };
 
-/* Structure used to store ALL the general and common information
- */
-template <typename TypeTrace, typename TypeReturn, typename TypeGuess>
-struct FinalConfig {
-
-  MatArgs<TypeTrace, TypeReturn, TypeGuess> * mat_args;
-  Config * conf;
-  void * queues;
-
-  FinalConfig(MatArgs<TypeTrace, TypeReturn, TypeGuess> * m_a, Config * c, void * q):
-    mat_args(m_a), conf(c), queues(q){
-    }
-};
-
-template <typename Type>
-struct SecondOrderQueues {
-  PriorityQueue<CorrSecondOrder<Type> > * pqueue;
-  CorrSecondOrder<Type> * top_corr;
-
-  SecondOrderQueues(PriorityQueue<CorrSecondOrder<Type> > * q, CorrSecondOrder<Type> * t):
-    pqueue(q), top_corr(t) {
-    }
-};
-
-
-template <typename Type>
-struct FirstOrderQueues {
-  PriorityQueue<CorrFirstOrder<Type> > * pqueue;
-  CorrFirstOrder<Type> * top_corr;
-
-  FirstOrderQueues(PriorityQueue<CorrFirstOrder<Type> > * q, CorrFirstOrder<Type> * t):
-    pqueue(q), top_corr(t) {
-    }
-};
-
 /* Parse a file describing an SBOX
  */
 int parse_sbox_file(const char * fname, uint16_t ** sbox);
@@ -493,17 +241,6 @@ int load_config(Config & conf, const char * conf_file);
 /* Prints the current configuration
  */
 void print_config(Config &conf);
-
-
-/* Frees a matrix
- */
-template <class Type>
-void free_matrix(Type *** matrix, int n_rows);
-
-/* Allocates memory for a matrix
- */
-template <class Type>
-int allocate_matrix(Type *** matrix, int n_rows, int n_columns);
 
   /* Latest version of load file. This function is used to load chunks in the
    * chunk partitioning approach.
@@ -551,87 +288,10 @@ int import_matrices(Type *** mem, Matrix * matrices,
     unsigned int n_matrices, bool transpose,
     int first_sample = 0, int n_samples = 0);
 
-template <typename Type>
-int get_ncol(long int memsize, int ntraces);
-
 /* Prints the top correlations by key, ranked by the correlation value. If the
  * correct key is specified, colors it :).
  */
 template <class Type>
 void print_top_r(Type corrs[], int n_keys, int correct_key=-1, string csv = "");
-
-//The files from socpa.h start here
-template <typename TypeTrace, typename TypeReturn, typename TypeGuess>
-struct General {
-
-  int start;
-  int length;
-  int n_traces;
-  int global_offset;
-  /* The number of columns that we can store in memory. Needed to know when to
-   * stop computing correlations in the last slice when computing on big files.
-   */
-  int n_samples;
-  TypeReturn ** precomp_guesses;
-  FinalConfig<TypeTrace, TypeReturn, TypeGuess> * fin_conf;
-
-  General(int st, int len, int nt, int go, int nc, TypeReturn ** pg, FinalConfig<TypeTrace, TypeReturn, TypeGuess> * s):
-    start(st), length(len), n_traces(nt), global_offset(go), n_samples(nc), precomp_guesses(pg), fin_conf(s){
-  }
-};
-
-
-template <typename TypeTrace>
-struct PrecompTraces {
-
-  int start;
-  int end;
-  int length;
-  TypeTrace ** trace;
-
-  PrecompTraces(int st, int en, int nt, TypeTrace ** tr):
-    start(st), end(en), length(nt), trace(tr) {
-  }
-};
-
-template <typename TypeGuess, typename TypeReturn>
-struct PrecompGuesses {
-
-  int start;
-  int end;
-  int n_traces;
-  TypeGuess ** guess;
-  TypeReturn ** precomp_k;
-
-  PrecompGuesses(int st, int en, int n_t, TypeGuess ** gu, TypeReturn ** pk):
-    start(st), end(en), n_traces(n_t), guess(gu), precomp_k(pk) {
-  }
-};
-
-
-/* This function precomputes the mean for the traces and subtract this mean
- * from every element of the traces. This is to be used by the newer v_5 of
- * SOCPA.
- */
-  template <class TypeTrace, class TypeReturn>
-void * precomp_traces_v_2(void * args_in);
-
-template <class TypeTrace, class TypeReturn, class TypeGuess>
-void * precomp_guesses(void * args_in);
-
-/* This functions simply splits the total work (n_rows) into an equal number of
- * threads, creates this amount of threads and starts them to precompute the
- * distance of means for each row of the matrix trace.
- * ! We expect a matrix where the number of traces is n_rows
- */
-  template <class TypeTrace, class TypeReturn>
-int p_precomp_traces(TypeTrace ** trace, int n_rows, int n_columns, int n_threads, int offset=0);
-
-
-template <class TypeTrace, class TypeReturn, class TypeGuess>
-int split_work(FinalConfig<TypeTrace, TypeReturn, TypeGuess> & fin_conf, void * (*fct)(void *), TypeReturn ** precomp_k, int total_work, int offset=0);
-
-//The files from socpa.h end here
-
 
 #endif
