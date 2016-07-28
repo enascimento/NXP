@@ -243,7 +243,7 @@ int second_order(Config & conf)
          * To avoid that, should introduce a variable n_work in
          * p_precomp_traces in order to only treat the n_work rows after offset.
          */
-       res = p_precomp_traces<TypeReturn, TypeReturn>(fin_conf.mat_args->trace, sample_offset ? col_incr : ncol, nrows, conf.n_threads, sample_offset ? window - 1 : 0); //p_precomp_traces can be found in cpa.cpp
+       res = p_precomp_traces<TypeReturn, TypeReturn>(fin_conf.mat_args->trace, sample_offset ? col_incr : ncol, nrows, conf.n_threads, conf.attack_moment, sample_offset ? window - 1 : 0); //p_precomp_traces can be found in cpa.cpp
        if (res != 0) {
          fprintf(stderr, "[ERROR] Precomputing distance from mean for the traces.\n");
          return -1;
@@ -330,7 +330,6 @@ int second_order(Config & conf)
 /* This function computes the second order correlation between a subset
  * of the traces defined in the structure passed as argument and all the
  * key guesses.
- * It uses the first order raw moment
  */
   template <class TypeTrace, class TypeReturn, class TypeGuess>
 void * second_order_correlation(void * args_in)

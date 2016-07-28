@@ -29,13 +29,12 @@
 #include "utils.h"
 #include "pearson.h"
 
-/* Second order and higher order moments cpa for large files
+/* Second order cpa for large files
  */
 template <class TypeTrace, class TypeReturn, class TypeGuess>
 int second_order(Config & conf);
 
 /* Correlation function used when computing second order
- * for moment = 1
  */
 template <class TypeTrace, class TypeReturn, class TypeGuess>
 void * second_order_correlation(void * args_in);
