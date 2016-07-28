@@ -150,6 +150,20 @@ struct PrecompTraces {
   }
 };
 
+template <typename TypeTrace>
+struct PrecompTracesNorm {
+
+  int start;
+  int end;
+  int length;
+  uint8_t exponent;
+  TypeTrace ** trace;
+
+  PrecompTracesNorm(int st, int en, int nt, int ex, TypeTrace ** tr):
+    start(st), end(en), length(nt), exponent(ex), trace(tr) {
+  }
+};
+
 template <typename TypeGuess, typename TypeReturn>
 struct PrecompGuesses {
 
@@ -184,6 +198,6 @@ template <class TypeTrace, class TypeReturn>
 void * precomp_traces_v_2_norm(void * args_in);
 
 template <class TypeTrace, class TypeReturn>
-int p_precomp_traces_norm(TypeTrace ** trace, int n_rows, int n_columns, int n_threads, int offset=0);
+int p_precomp_traces_norm(TypeTrace ** trace, int n_rows, int n_columns, int n_threads,  uint8_t exponent, int offset=0);
 
 #endif

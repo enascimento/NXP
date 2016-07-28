@@ -143,7 +143,7 @@ void * precomp_traces_v_2(void * args_in)
  * ! We expect a matrix where the number of traces is n_rows
  */
   template <class TypeTrace, class TypeReturn>
-int p_precomp_traces_norm(TypeTrace ** trace, int n_rows, int n_columns, int n_threads, int offset/*, int n_traces_from_offset*/)
+int p_precomp_traces_norm(TypeTrace ** trace, int n_rows, int n_columns, int n_threads,  uint8_t exponent, int offset/*, int n_traces_from_offset*/)
 {
   int n, rc,
       workload = 0,
@@ -162,9 +162,9 @@ int p_precomp_traces_norm(TypeTrace ** trace, int n_rows, int n_columns, int n_t
   }
 
   pthread_t threads[n_threads];
-  PrecompTraces<TypeTrace> *ta = NULL;
+  PrecompTracesNorm<TypeTrace> *ta = NULL;
 
-  ta = (PrecompTraces<TypeTrace>*) malloc(n_threads * sizeof(PrecompTraces<TypeTrace>));
+  ta = (PrecompTracesNorm<TypeTrace>*) malloc(n_threads * sizeof(PrecompTracesNorm<TypeTrace>));
   if (ta == NULL) {
     fprintf (stderr, "[ERROR] Memory alloc failed.\n");
     return -1;
@@ -172,7 +172,7 @@ int p_precomp_traces_norm(TypeTrace ** trace, int n_rows, int n_columns, int n_t
 
   for (n = 0; n < n_threads; n++) {
     //printf(" Thread_%i [%i-%i]\n",n , offset+ n*workload, offset+n*workload + workload + ((n + 1) / n_threads)*(n_rows % n_threads));
-    ta[n] = PrecompTraces<TypeTrace>(offset + n*workload, workload + ((n + 1) / n_threads) * (n_rows % n_threads), n_traces, trace);
+    ta[n] = PrecompTracesNorm<TypeTrace>(offset + n*workload, workload + ((n + 1) / n_threads) * (n_rows % n_threads), n_traces, exponent, trace);
     rc = pthread_create(&threads[n], NULL, precomp_traces_v_2_norm<TypeTrace, TypeReturn>, (void *) &ta[n]);
     if (rc != 0) {
       fprintf(stderr, "[ERROR] Creating thread.\n");
@@ -205,7 +205,7 @@ void * precomp_traces_v_2_norm(void * args_in)
   TypeReturn mean = 0.0;
   TypeReturn std = 0.0;
 
-  PrecompTraces<TypeTrace> * G = (PrecompTraces<TypeTrace> *) args_in;
+  PrecompTracesNorm<TypeTrace> * G = (PrecompTracesNorm<TypeTrace> *) args_in;
 
   for (i = G->start; i < G->start + G->end; i++) {
     for (j = 0; j < G->length; j++) {
@@ -217,6 +217,7 @@ void * precomp_traces_v_2_norm(void * args_in)
     for (j = 0; j < G->length; j++) {
       G->trace[i][j] -= mean;
       G->trace[i][j] /= std;
+      G->trace[i][j] = pow(G->trace[i][j],G->exponent);
     }
   }
   return NULL;
@@ -230,8 +231,8 @@ template int p_precomp_traces<float, float>(float ** trace, int n_rows, int n_co
 template int p_precomp_traces<float, double>(float ** trace, int n_rows, int n_columns, int n_threads, int offset);
 template int p_precomp_traces<signed char, float>(signed char ** trace, int n_rows, int n_columns, int n_threads, int offset);
 
-template int p_precomp_traces_norm<int8_t, double>(int8_t ** trace, int n_rows, int n_columns, int n_threads, int offset);
-template int p_precomp_traces_norm<double, double>(double ** trace, int n_rows, int n_columns, int n_threads, int offset);
-template int p_precomp_traces_norm<float, float>(float ** trace, int n_rows, int n_columns, int n_threads, int offset);
-template int p_precomp_traces_norm<float, double>(float ** trace, int n_rows, int n_columns, int n_threads, int offset);
-template int p_precomp_traces_norm<signed char, float>(signed char ** trace, int n_rows, int n_columns, int n_threads, int offset);
+template int p_precomp_traces_norm<int8_t, double>(int8_t ** trace, int n_rows, int n_columns, int n_threads, uint8_t exponent, int offset);
+template int p_precomp_traces_norm<double, double>(double ** trace, int n_rows, int n_columns, int n_threads, uint8_t exponent, int offset);
+template int p_precomp_traces_norm<float, float>(float ** trace, int n_rows, int n_columns, int n_threads, uint8_t exponent, int offset);
+template int p_precomp_traces_norm<float, double>(float ** trace, int n_rows, int n_columns, int n_threads, uint8_t exponent, int offset);
+template int p_precomp_traces_norm<signed char, float>(signed char ** trace, int n_rows, int n_columns, int n_threads, uint8_t exponent, int offset);

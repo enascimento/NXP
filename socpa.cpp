@@ -237,7 +237,7 @@ int second_order(Config & conf)
       if(conf.attack_moment == 1) {
         res = split_work(fin_conf, second_order_correlation<TypeReturn, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, second_order_correlation is defined below
       }
-      else {
+      else if(conf.attack_moment == 2){
         /* We compute the difference from the mean.
          * WARNING: Unnecessary work is done at the last iteration.
          * To avoid that, should introduce a variable n_work in
@@ -250,6 +250,14 @@ int second_order(Config & conf)
        }
        res = split_work(fin_conf, second_order_correlation<TypeReturn, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, second_order_correlation is defined below
       }
+      else {
+        res = p_precomp_traces_norm<TypeReturn, TypeReturn>(fin_conf.mat_args->trace, sample_offset ? col_incr : ncol, nrows, conf.n_threads, conf.attack_moment, sample_offset ? window - 1 : 0); //p_precomp_traces_norm can be found in cpa.cpp
+        if (res != 0) {
+          fprintf(stderr, "[ERROR] Precomputing distance from mean for the traces.\n");
+          return -1;
+        }
+        res = split_work(fin_conf, second_order_correlation<TypeReturn, TypeReturn, TypeGuess>, precomp_k, is_last_iter ? (n_samples - sample_offset) : col_incr, sample_offset); //split_work can be found in memUtils.cpp, second_order_correlation is defined below
+       }
       if (res != 0) {
         fprintf(stderr, "[ERROR] Computing correlations.\n");
         return -1;

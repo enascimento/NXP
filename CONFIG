@@ -64,7 +64,7 @@ order=2
 # 1: first order raw statistical moment (default)
 # 2: second order central moment
 # n>2: n-th order standardized moment
-moment=2
+moment=8
 
 # The return type of the correlation.
 return_type=double
